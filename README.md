@@ -151,18 +151,66 @@ python universal_eeg_finetune.py \
 
 ### Using Pre-trained Checkpoints
 
+We provide the pre-trained MindMix fusion checkpoint at:
+- `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth`
+
+To extract and use the **EEG encoder** from this checkpoint:
+
 ```python
 import torch
 from modeling_finetune_2 import labram_base_patch200_200
+from einops import rearrange
 
-# Load pre-trained EEG encoder
-checkpoint = torch.load('pretrain_fusion_checkpoints/checkpoint-best.pth')
-model = labram_base_patch200_200(
-    num_classes=256,  # Embedding dimension
-    drop_path_rate=0.1
+# 1. Instantiate the EEG backbone
+#    num_classes=0 removes the classification head; output is [B, 200]
+eeg_encoder = labram_base_patch200_200(
+    pretrained=False,
+    num_classes=0,
+    drop_path_rate=0.1,
+    use_mean_pooling=True,
+    use_rel_pos_bias=True,
+    use_abs_pos_emb=True,
+    qkv_bias=True,
 )
-model.load_state_dict(checkpoint['model'])
+
+# 2. Load the MindMix fusion checkpoint
+ckpt = torch.load('pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',
+                  map_location='cpu')
+state_dict = ckpt['model_state_dict']  # key name used during training
+
+# 3. Extract EEG encoder weights
+#    In the fusion checkpoint, EEG backbone weights are stored under
+#    the prefix "eeg_model.model.*". Strip that prefix before loading.
+eeg_weights = {
+    k.replace('eeg_model.model.', ''): v
+    for k, v in state_dict.items()
+    if k.startswith('eeg_model.model.')
+}
+
+# 4. Load into the backbone
+eeg_encoder.load_state_dict(eeg_weights, strict=False)
+eeg_encoder.eval()
+
+# 5. Wrap with the same rearrange logic used during training
+class EEGEncoder(torch.nn.Module):
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+    def forward(self, x):
+        # x: [B, n_channels, 400] -> [B, n_channels, 2, 200]
+        x = rearrange(x, 'B N (A T) -> B N A T', A=2, T=200)
+        return self.model(x)
+
+encoder = EEGEncoder(eeg_encoder)
+
+# Example inference
+dummy_eeg = torch.randn(2, 64, 400)  # [batch, 64 channels, 400 time points]
+with torch.no_grad():
+    feat = encoder(dummy_eeg)  # [2, 200]
+print("EEG feature shape:", feat.shape)
 ```
+
+For a complete runnable script, see [`load_pretrained_eeg.py`](load_pretrained_eeg.py).
 
 ---
 
