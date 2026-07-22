@@ -16,7 +16,7 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 **MindMix** addresses this challenge through:
 
 - 🧠 **Two-Stage Training Strategy**: Generalized EEG feature learning followed by neural-acoustic alignment
-- 🔄 **Cross-Attention Low-Rank Alignment (CLARA)**: Novel module for fine-grained cross-modal information integration
+- 🔄 **Cross-Attention Low-Rank Alignment (CALRA)**: Novel module for fine-grained cross-modal information integration
 - 📊 **State-of-the-Art Performance**: Superior results on auditory attention decoding, emotion recognition, and cross-modal retrieval tasks
 
 ---
