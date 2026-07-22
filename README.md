@@ -26,7 +26,7 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 | Feature | Description |
 |---------|-------------|
 | **🔬 Foundation Model** | Pre-trained on 3,000+ hours of EEG data for generalized neural representations |
-| **🎵 Multimodal Fusion** | Novel CLARA module for EEG-audio cross-modal alignment |
+| **🎵 Multimodal Fusion** | Novel CALRA module for EEG-audio cross-modal alignment |
 | **🎯 Multi-Task Support** | Auditory attention decoding, emotion recognition, cross-modal retrieval |
 | **⚡ Flexible Fine-tuning** | Three strategies: EEG-only, multimodal real, and multimodal prototype |
 | **📈 SOTA Results** | Substantially surpasses existing baselines across diverse auditory tasks |
@@ -49,7 +49,7 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 │  Stage 2: Neural-Acoustic Alignment                             │
 │  ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐   │
 │  │  EEG Embed  │────▶│             │────▶│  Aligned EEG    │   │
-│  │             │     │    CLARA    │     │  Representation │   │
+│  │             │     │    CALRA    │     │  Representation │   │
 │  └─────────────┘     │   Module    │     └─────────────────┘   │
 │  ┌─────────────┐     │ (Low-Rank  │                            │
 │  │Audio Embed  │────▶│ Cross-Attn)│                            │
@@ -65,9 +65,9 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### CLARA Module
+### CALRA Module
 
-The **Cross-Attention Low-Rank Alignment (CLARA)** module is our novel contribution for effective EEG-audio fusion:
+The **Cross-Attention Low-Rank Alignment (CALRA)** module is our novel contribution for effective EEG-audio fusion:
 
 - **Self-Attention Paths**: Independent processing for EEG and audio modalities
 - **Cross-Attention Fusion**: Bidirectional cross-modal attention with low-rank decomposition
@@ -131,7 +131,7 @@ python MindMix_clip_pretrain.py \
 python universal_eeg_finetune.py \
     --dataset EEG4EMO \
     --strategy multimodal_real \
-    --fusion_method clara \
+    --fusion_method calra \
     --batch_size 32 \
     --epochs 50 \
     --lr 1e-5
@@ -143,7 +143,7 @@ python universal_eeg_finetune.py \
 python universal_eeg_finetune.py \
     --dataset KUL \
     --strategy multimodal_real \
-    --fusion_method clara \
+    --fusion_method calra \
     --eval_method contrastive \
     --batch_size 32 \
     --epochs 50
@@ -221,7 +221,7 @@ MindMix/
 ├── MindMix_clip_pretrain.py      # Stage 1: EEG-audio fusion pre-training
 ├── MindMix_clip_finetune.py      # Stage 2: Cross-modal fine-tuning
 ├── universal_eeg_finetune.py     # Universal fine-tuning framework
-├── universal_models.py           # Model architectures (CLARA, ClipLoss)
+├── universal_models.py           # Model architectures (CALRA, ClipLoss)
 ├── universal_trainer.py          # Training utilities
 ├── utils.py                      # General utilities
 ├── modeling_finetune_2.py        # LaBraM model implementation
@@ -236,7 +236,7 @@ MindMix/
 | `MindMix_clip_pretrain.py` | Pre-trains EEG encoder with CLIP-style contrastive learning on EEG-audio pairs |
 | `MindMix_clip_finetune.py` | Fine-tunes the model on specific downstream tasks |
 | `universal_eeg_finetune.py` | Universal framework supporting multiple datasets and strategies |
-| `universal_models.py` | Core model components: CLARA module, ClipLoss, classification heads |
+| `universal_models.py` | Core model components: CALRA module, ClipLoss, classification heads |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
 
 ---
@@ -269,17 +269,17 @@ python universal_eeg_finetune.py --strategy eeg_only --dataset EEG4EMO
 ```
 
 ### 2. Multimodal Real (`multimodal_real`)
-Uses real paired EEG-audio data with CLARA fusion.
+Uses real paired EEG-audio data with CALRA fusion.
 
 ```bash
-python universal_eeg_finetune.py --strategy multimodal_real --fusion_method clara
+python universal_eeg_finetune.py --strategy multimodal_real --fusion_method calra
 ```
 
 ### 3. Multimodal Prototype (`multimodal_prototype`)
 Uses EEG with pseudo-audio prototypes for lightweight training.
 
 ```bash
-python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method clara
+python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method calra
 ```
 
 ---
@@ -308,7 +308,7 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 | `--model` | `labram_base_patch200_200` | Model architecture |
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
-| `--fusion_method` | `clara` | Fusion module: `clara` or `concat` |
+| `--fusion_method` | `calra` | Fusion module: `calra` or `concat` |
 
 ### Training Parameters
 
