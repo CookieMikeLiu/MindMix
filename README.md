@@ -290,13 +290,12 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 
 | Task | Dataset | MindMix | Previous SOTA |
 |------|---------|---------|---------------|
-| Attention Decoding | KUL | **XX.X%** | XX.X% |
-| Attention Decoding | DTU | **XX.X%** | XX.X% |
-| Emotion Recognition | EEG4EMO | **XX.X%** | XX.X% |
-| Cross-Modal Retrieval | - | **XX.X%** | XX.X% |
+| Attention Decoding | KUL | **99.82%** | 94.81% |
+| Attention Decoding | DTU | **99.93%** | 84.56% |
+| Emotion Recognition | HR-EEG4EMO | **88.78%** | 82.74% |
+| Cross-Modal Retrieval | MAD-EEG (Duo Acc.) | **94.75%** | 94.25% |
 
 *Detailed results available in our [paper](https://openreview.net/forum?id=1ifQzlETeG).*
-
 ---
 
 ## 🔧 Configuration Options
