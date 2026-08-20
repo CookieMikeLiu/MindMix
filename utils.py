@@ -31,7 +31,6 @@ import h5py
 from tensorboardX import SummaryWriter
 import pickle
 from scipy.signal import resample
-from pyhealth.metrics import binary_metrics_fn, multiclass_metrics_fn
 import pandas as pd
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
@@ -802,7 +801,13 @@ def prepare_TUAB_dataset(root):
     return train_dataset, test_dataset, val_dataset
 
 
+def _get_pyhealth_metric_fns():
+    from pyhealth.metrics import binary_metrics_fn, multiclass_metrics_fn
+    return binary_metrics_fn, multiclass_metrics_fn
+
+
 def get_metrics(output, target, metrics, is_binary, threshold=0.5):
+    binary_metrics_fn, multiclass_metrics_fn = _get_pyhealth_metric_fns()
     if is_binary:
         if 'roc_auc' not in metrics or sum(target) * (len(target) - sum(target)) != 0:  # to prevent all 0 or all 1 and raise the AUROC error
             results = binary_metrics_fn(

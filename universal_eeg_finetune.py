@@ -80,7 +80,7 @@ def get_args():
     parser.add_argument('--dataset', default='EEG4EMO', type=str, 
                         choices=['EEG4EMO', 'KUL', 'DTU', 'ESAA'],
                         help='Dataset to use')
-    parser.add_argument('--data_path', default='Dataset\EEG4EMO\preprocessed_pair', type=str,
+    parser.add_argument('--data_path', default='Dataset/EEG4EMO/preprocessed_pair', type=str,
                         help='Path to dataset')
     
     # 微调策略参数
@@ -441,7 +441,7 @@ class EEGEncoder(nn.Module):
 
             print("Load EEG encoder checkpoint from %s" % self.args.finetune)
             checkpoint_model = self.get_checkpoint_model(checkpoint)
-            self.adjust_checkpoint_keys(checkpoint_model, model)
+            checkpoint_model = self.adjust_checkpoint_keys(checkpoint_model, model)
             utils.load_state_dict(model, checkpoint_model, prefix=self.args.model_prefix)
 
         model.to(self.device)
@@ -471,6 +471,8 @@ class EEGEncoder(nn.Module):
             for key in all_keys:
                 if key.startswith('student.'):
                     new_dict[key[8:]] = checkpoint_model[key]
+                else:
+                    new_dict[key] = checkpoint_model[key]
             checkpoint_model = new_dict
 
         state_dict = model.state_dict()
@@ -482,6 +484,8 @@ class EEGEncoder(nn.Module):
         for key in list(checkpoint_model.keys()):
             if "relative_position_index" in key:
                 checkpoint_model.pop(key)
+
+        return checkpoint_model
 
 
 def cross_validate_subject(args, subject_data, subject_id, device):

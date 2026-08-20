@@ -142,12 +142,15 @@ python universal_eeg_finetune.py \
 ```bash
 python universal_eeg_finetune.py \
     --dataset KUL \
+    --data_path Dataset/KUL_trail \
     --strategy multimodal_real \
     --fusion_method clara \
-    --eval_method contrastive \
     --batch_size 32 \
     --epochs 50
 ```
+
+For DTU, use `--dataset DTU --data_path Dataset/DTU_trail` with the same
+multimodal settings.
 
 ### Using Pre-trained Checkpoints
 
@@ -170,6 +173,7 @@ eeg_encoder = labram_base_patch200_200(
     use_mean_pooling=True,
     use_rel_pos_bias=True,
     use_abs_pos_emb=True,
+    init_values=0.1,
     qkv_bias=True,
 )
 
@@ -212,6 +216,18 @@ print("EEG feature shape:", feat.shape)
 
 For a complete runnable script, see [`load_pretrained_eeg.py`](load_pretrained_eeg.py).
 
+### Sanity Check Demo
+
+To verify the installation and inspect the core CLARA and contrastive-learning
+components without preparing a real dataset, run:
+
+```bash
+python quick_start.py
+```
+
+This demo uses synthetic tensors only. It is intended as a lightweight
+reader-facing example rather than a training or evaluation script.
+
 ---
 
 ## 📁 Project Structure
@@ -238,6 +254,8 @@ MindMix/
 | `universal_eeg_finetune.py` | Universal framework supporting multiple datasets and strategies |
 | `universal_models.py` | Core model components: CLARA module, ClipLoss, classification heads |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
+| `quick_start.py` | Lightweight demo using synthetic tensors to verify installation and core modules |
+| `load_pretrained_eeg.py` | Runnable example for extracting and using the EEG encoder from a MindMix checkpoint |
 
 ---
 
@@ -309,6 +327,7 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
 | `--fusion_method` | `clara` | Fusion module: `clara` or `concat` |
+| `--use_auditory_type` | disabled | Optional auditory-type-specific CLARA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
 
 ### Training Parameters
 
