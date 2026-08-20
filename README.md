@@ -142,15 +142,18 @@ python universal_eeg_finetune.py \
 ```bash
 python universal_eeg_finetune.py \
     --dataset KUL \
-    --data_path Dataset/KUL_trail \
+    --data_path <path_to_KUL_trail> \
     --strategy multimodal_real \
     --fusion_method clara \
     --batch_size 32 \
     --epochs 50
 ```
 
-For DTU, use `--dataset DTU --data_path Dataset/DTU_trail` with the same
+For DTU, use `--dataset DTU --data_path <path_to_DTU_trail>` with the same
 multimodal settings.
+
+The downstream datasets are not included in this repository. Please prepare the
+preprocessed KUL/DTU files locally and pass their path via `--data_path`.
 
 ### Using Pre-trained Checkpoints
 
