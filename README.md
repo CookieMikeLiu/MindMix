@@ -80,41 +80,48 @@ The **Cross-Attention Low-Rank Alignment (CLARA)** module is our novel contribut
 ### Installation
 
 ```bash
-# Clone the repository
+# Clone the repository and fetch Git LFS checkpoint files
+git lfs install
 git clone https://github.com/CookieMikeLiu/MindMix.git
 cd MindMix
+git lfs pull
 
 # Install dependencies
-pip install torch torchvision torchaudio
-pip install transformers timm einops tensorboardX
-pip install numpy pandas scikit-learn scipy h5py tqdm
-pip install pyhealth
+pip install -r requirements.txt
 ```
 
 ### Data Preparation
 
-Organize your datasets as follows:
+Downstream datasets are not included in this repository. Prepare the
+preprocessed files locally and pass their directory with `--data_path`.
 
 ```
-data/
-├── EEG4EMO/           # EEG-Audio emotion recognition
-│   ├── train/
-│   ├── test/
-│   └── labels.csv
-├── KUL/               # Auditory attention decoding (KUL dataset)
-│   ├── subjects/
-│   └── metadata.json
-└── DTU/               # Auditory attention decoding (DTU dataset)
-    ├── subjects/
-    └── metadata.json
+Dataset/
+├── EEG4EMO/
+│   └── preprocessed_pair/
+│       └── <subject_id>/
+│           ├── <subject_id>_labels.csv
+│           └── *video*.pkl
+├── KUL_trail/
+│   ├── <subject_id>.pkl
+│   └── ...
+└── DTU_trail/
+    ├── <subject_id>.pkl
+    └── ...
 ```
 
-### Pre-training (Stage 1)
+For KUL/DTU, each subject `.pkl` can be a pandas `DataFrame` or a list of
+records with `eeg`, `target_audio`, `attended_label`, and either
+`negetive_audio` (legacy spelling) or `negative_audio`.
 
-Train the EEG foundation model with paired EEG-audio data:
+### Neural-Acoustic Alignment (Stage 2)
+
+The released MindMix script trains the paired EEG-audio alignment stage on top
+of the LaBraM EEG foundation encoder:
 
 ```bash
 python MindMix_clip_pretrain.py \
+    --data_path <path_to_paired_EEG_audio_pretraining_data> \
     --batch_size 32 \
     --epochs 100 \
     --lr 1e-4 \
@@ -123,7 +130,7 @@ python MindMix_clip_pretrain.py \
     --output_dir ./pretrain_fusion_checkpoints
 ```
 
-### Fine-tuning (Stage 2)
+### Downstream Fine-tuning (Stage 3)
 
 #### Auditory Emotion Recognition (EEG4EMO)
 
@@ -132,6 +139,7 @@ python universal_eeg_finetune.py \
     --dataset EEG4EMO \
     --strategy multimodal_real \
     --fusion_method clara \
+    --pretrained_model pretrain_fusion_checkpoints/best_model_loss_0.0909.pth \
     --batch_size 32 \
     --epochs 50 \
     --lr 1e-5
@@ -145,6 +153,7 @@ python universal_eeg_finetune.py \
     --data_path <path_to_KUL_trail> \
     --strategy multimodal_real \
     --fusion_method clara \
+    --pretrained_model pretrain_fusion_checkpoints/best_model_loss_0.0909.pth \
     --batch_size 32 \
     --epochs 50
 ```
@@ -152,13 +161,13 @@ python universal_eeg_finetune.py \
 For DTU, use `--dataset DTU --data_path <path_to_DTU_trail>` with the same
 multimodal settings.
 
-The downstream datasets are not included in this repository. Please prepare the
-preprocessed KUL/DTU files locally and pass their path via `--data_path`.
-
 ### Using Pre-trained Checkpoints
 
 We provide the pre-trained MindMix fusion checkpoint at:
 - `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth`
+
+If this file is only a small Git LFS pointer after cloning, run `git lfs pull`
+from the repository root.
 
 To extract and use the **EEG encoder** from this checkpoint:
 
@@ -166,6 +175,7 @@ To extract and use the **EEG encoder** from this checkpoint:
 import torch
 from modeling_finetune_2 import labram_base_patch200_200
 from einops import rearrange
+from utils import load_trusted_checkpoint
 
 # 1. Instantiate the EEG backbone
 #    num_classes=0 removes the classification head; output is [B, 200]
@@ -181,8 +191,10 @@ eeg_encoder = labram_base_patch200_200(
 )
 
 # 2. Load the MindMix fusion checkpoint
-ckpt = torch.load('pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',
-                  map_location='cpu')
+ckpt = load_trusted_checkpoint(
+    'pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',
+    map_location='cpu',
+)
 state_dict = ckpt['model_state_dict']  # key name used during training
 
 # 3. Extract EEG encoder weights
@@ -237,8 +249,8 @@ reader-facing example rather than a training or evaluation script.
 
 ```
 MindMix/
-├── MindMix_clip_pretrain.py      # Stage 1: EEG-audio fusion pre-training
-├── MindMix_clip_finetune.py      # Stage 2: Cross-modal fine-tuning
+├── MindMix_clip_pretrain.py      # Stage 2: EEG-audio alignment training
+├── MindMix_clip_finetune.py      # Stage 3: AAD fine-tuning
 ├── universal_eeg_finetune.py     # Universal fine-tuning framework
 ├── universal_models.py           # Model architectures (CLARA, ClipLoss)
 ├── universal_trainer.py          # Training utilities
@@ -307,16 +319,16 @@ python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method
 
 ## 📊 Results
 
-MindMix substantially surpasses existing baselines across multiple auditory decoding tasks:
+MindMix substantially surpasses existing baselines across multiple auditory decoding tasks. The released checkpoint and scripts reproduce the auditory attention decoding protocol reported in the paper:
 
-| Task | Dataset | MindMix | Previous SOTA |
-|------|---------|---------|---------------|
-| Attention Decoding | KUL | **XX.X%** | XX.X% |
-| Attention Decoding | DTU | **XX.X%** | XX.X% |
-| Emotion Recognition | EEG4EMO | **XX.X%** | XX.X% |
-| Cross-Modal Retrieval | - | **XX.X%** | XX.X% |
+| Task | Dataset | Metric | MindMix |
+|------|---------|--------|---------|
+| Auditory Attention Decoding | KUL | Balanced Accuracy | **0.9982 ± 0.008** |
+| Auditory Attention Decoding | KUL | Weighted F1 | **0.9991 ± 0.004** |
+| Auditory Attention Decoding | DTU | Balanced Accuracy | **0.9993 ± 0.009** |
+| Auditory Attention Decoding | DTU | Weighted F1 | **0.9996 ± 0.005** |
 
-*Detailed results available in our [paper](https://openreview.net/forum?id=1ifQzlETeG).*
+Additional emotion recognition and cross-modal retrieval results are available in our [paper](https://openreview.net/forum?id=1ifQzlETeG).
 
 ---
 
@@ -329,7 +341,8 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 | `--model` | `labram_base_patch200_200` | Model architecture |
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
-| `--fusion_method` | `clara` | Fusion module: `clara` or `concat` |
+| `--fusion_method` | `clara` | Fusion module: `clara`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `clara_enhanced` |
+| `--pretrained_model` | `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix fusion checkpoint used for downstream fine-tuning |
 | `--use_auditory_type` | disabled | Optional auditory-type-specific CLARA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
 
 ### Training Parameters
@@ -348,11 +361,11 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 If you find MindMix useful in your research, please cite our paper:
 
 ```bibtex
-@inproceedings{liu2025mindmix,
+@inproceedings{liu2026mindmix,
   title={MindMix: A Multimodal Foundation Model for Auditory Perception Decoding},
   author={Liu, Mike and others},
   booktitle={International Conference on Learning Representations (ICLR)},
-  year={2025}
+  year={2026}
 }
 ```
 

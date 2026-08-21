@@ -92,7 +92,7 @@ def get_args():
                         help='Cross-modal fusion method')
     
     # 模型参数
-    parser.add_argument('--pretrained_model', default='checkpoints\\checkpoint.pth',
+    parser.add_argument('--pretrained_model', default='pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',
                         help='Path to pretrained model (for eeg_only: EEG encoder, for multimodal: fusion model)')
     parser.add_argument('--finetune', default='checkpoints/labram-base.pth',
                         help='EEG encoder checkpoint')
@@ -364,7 +364,8 @@ class UniversalDataset(Dataset):
         elif self.dataset_type in ['KUL', 'DTU']:
             eeg = sample['eeg']
             target_audio = sample['target_audio']
-            negative_audio = sample['negetive_audio']
+            negative_audio_key = 'negetive_audio' if 'negetive_audio' in sample else 'negative_audio'
+            negative_audio = sample[negative_audio_key]
             label = sample['attended_label']
             
             eeg_tensor = torch.tensor(eeg, dtype=torch.float32)
@@ -437,7 +438,7 @@ class EEGEncoder(nn.Module):
                 checkpoint = torch.hub.load_state_dict_from_url(
                     self.args.finetune, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(self.args.finetune, map_location='cpu')
+                checkpoint = utils.load_trusted_checkpoint(self.args.finetune, map_location='cpu')
 
             print("Load EEG encoder checkpoint from %s" % self.args.finetune)
             checkpoint_model = self.get_checkpoint_model(checkpoint)

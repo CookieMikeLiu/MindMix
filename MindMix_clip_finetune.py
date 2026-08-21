@@ -261,7 +261,7 @@ class EEGEncoder(nn.Module):
                 checkpoint = torch.hub.load_state_dict_from_url(
                     self.args.finetune, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(self.args.finetune, map_location='cpu')
+                checkpoint = utils.load_trusted_checkpoint(self.args.finetune, map_location='cpu')
 
             print("Load checkpoint from %s" % self.args.finetune)
             checkpoint_model = self.get_checkpoint_model(checkpoint)
@@ -325,7 +325,8 @@ class DownstreamDataset(Dataset):
         sample = self.data.iloc[idx]
         eeg = sample['eeg']
         target_audio = sample['target_audio']
-        negative_audio = sample['negetive_audio']
+        negative_audio_key = 'negetive_audio' if 'negetive_audio' in sample else 'negative_audio'
+        negative_audio = sample[negative_audio_key]
         label = sample['attended_label']
         
         eeg_tensor = torch.tensor(eeg, dtype=torch.float32)
@@ -948,7 +949,7 @@ class CLIPModel(nn.Module):
     def load_pretrained_weights(self, pretrained_path):
         """加载预训练权重"""
         print(f"Loading pretrained weights from {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location='cpu')
+        checkpoint = utils.load_trusted_checkpoint(pretrained_path, map_location='cpu')
         
         # 提取模型状态字典
         if 'model_state_dict' in checkpoint:

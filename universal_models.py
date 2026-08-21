@@ -12,6 +12,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from transformers import Wav2Vec2Model
+from utils import load_trusted_checkpoint
 
 
 class ClipLoss(nn.Module):
@@ -219,7 +220,7 @@ class EEGOnlyModel(nn.Module):
     def load_pretrained_weights(self, pretrained_path):
         """加载预训练权重"""
         print(f"Loading pretrained EEG encoder weights from {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location='cpu')
+        checkpoint = load_trusted_checkpoint(pretrained_path, map_location='cpu')
         
         # 处理不同的checkpoint结构
         if 'model_state_dict' in checkpoint:
@@ -455,7 +456,7 @@ class MultimodalRealModel(nn.Module):
     def load_pretrained_weights(self, pretrained_path):
         """加载预训练权重（与MindMix_clip_finetune.py的CLIPModel.load_pretrained_weights完全一致，但添加键名映射）"""
         print(f"Loading pretrained weights from {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location='cpu')
+        checkpoint = load_trusted_checkpoint(pretrained_path, map_location='cpu')
         
         # 提取模型状态字典
         if 'model_state_dict' in checkpoint:
@@ -584,7 +585,7 @@ class MultimodalPrototypeModel(nn.Module):
     def load_pretrained_weights(self, pretrained_path):
         """加载预训练CLIP权重"""
         print(f"Loading pretrained CLIP weights from {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location='cpu')
+        checkpoint = load_trusted_checkpoint(pretrained_path, map_location='cpu')
         
         if 'model_state_dict' in checkpoint:
             state_dict = checkpoint['model_state_dict']
@@ -620,4 +621,4 @@ def create_model(strategy, eeg_encoder, audio_encoder=None, fusion_method='clara
             raise ValueError("Audio encoder is required for multimodal_prototype strategy")
         return MultimodalPrototypeModel(eeg_encoder, audio_encoder, fusion_method, num_classes, use_auditory_type)
     else:
-        raise ValueError(f"Unsupported strategy: {strategy}") 
+        raise ValueError(f"Unsupported strategy: {strategy}")

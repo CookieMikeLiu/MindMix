@@ -37,6 +37,19 @@ from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
 
 
+def load_trusted_checkpoint(path, map_location='cpu'):
+    """Load a local checkpoint file that is trusted by the caller.
+
+    PyTorch 2.6 changed ``torch.load`` to default to ``weights_only=True``.
+    The released MindMix/LaBraM checkpoints include metadata objects, so they
+    need the legacy full-checkpoint loader.
+    """
+    try:
+        return torch.load(path, map_location=map_location, weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location=map_location)
+
+
 standard_1020 = [
     'FP1', 'FPZ', 'FP2', 
     'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFZ', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10', \
@@ -630,7 +643,7 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                 checkpoint = torch.hub.load_state_dict_from_url(
                     args.resume, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(args.resume, map_location='cpu')
+                checkpoint = load_trusted_checkpoint(args.resume, map_location='cpu')
             model_without_ddp.load_state_dict(checkpoint['model']) # strict: bool=True, , strict=False
             print("Resume checkpoint %s" % args.resume)
             if 'optimizer' in checkpoint and 'epoch' in checkpoint:
