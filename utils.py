@@ -31,11 +31,23 @@ import h5py
 from tensorboardX import SummaryWriter
 import pickle
 from scipy.signal import resample
-from pyhealth.metrics import binary_metrics_fn, multiclass_metrics_fn
 import pandas as pd
 from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 from scipy.stats import pearsonr
+
+
+def load_trusted_checkpoint(path, map_location='cpu'):
+    """Load a local checkpoint file that is trusted by the caller.
+
+    PyTorch 2.6 changed ``torch.load`` to default to ``weights_only=True``.
+    The released MindMix/LaBraM checkpoints include metadata objects, so they
+    need the legacy full-checkpoint loader.
+    """
+    try:
+        return torch.load(path, map_location=map_location, weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location=map_location)
 
 
 standard_1020 = [
@@ -631,7 +643,7 @@ def auto_load_model(args, model, model_without_ddp, optimizer, loss_scaler, mode
                 checkpoint = torch.hub.load_state_dict_from_url(
                     args.resume, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(args.resume, map_location='cpu')
+                checkpoint = load_trusted_checkpoint(args.resume, map_location='cpu')
             model_without_ddp.load_state_dict(checkpoint['model']) # strict: bool=True, , strict=False
             print("Resume checkpoint %s" % args.resume)
             if 'optimizer' in checkpoint and 'epoch' in checkpoint:
@@ -802,7 +814,13 @@ def prepare_TUAB_dataset(root):
     return train_dataset, test_dataset, val_dataset
 
 
+def _get_pyhealth_metric_fns():
+    from pyhealth.metrics import binary_metrics_fn, multiclass_metrics_fn
+    return binary_metrics_fn, multiclass_metrics_fn
+
+
 def get_metrics(output, target, metrics, is_binary, threshold=0.5):
+    binary_metrics_fn, multiclass_metrics_fn = _get_pyhealth_metric_fns()
     if is_binary:
         if 'roc_auc' not in metrics or sum(target) * (len(target) - sum(target)) != 0:  # to prevent all 0 or all 1 and raise the AUROC error
             results = binary_metrics_fn(

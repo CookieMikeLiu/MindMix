@@ -261,12 +261,12 @@ class EEGEncoder(nn.Module):
                 checkpoint = torch.hub.load_state_dict_from_url(
                     self.args.finetune, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(self.args.finetune, map_location='cpu')
+                checkpoint = utils.load_trusted_checkpoint(self.args.finetune, map_location='cpu')
 
             print("Load checkpoint from %s" % self.args.finetune)
             checkpoint_model = self.get_checkpoint_model(checkpoint)
 
-            self.adjust_checkpoint_keys(checkpoint_model, model)
+            checkpoint_model = self.adjust_checkpoint_keys(checkpoint_model, model)
             utils.load_state_dict(model, checkpoint_model, prefix=self.args.model_prefix)
 
         model.to(self.device)
@@ -295,6 +295,8 @@ class EEGEncoder(nn.Module):
             for key in all_keys:
                 if key.startswith('student.'):
                     new_dict[key[8:]] = checkpoint_model[key]
+                else:
+                    new_dict[key] = checkpoint_model[key]
 
             checkpoint_model = new_dict
 
@@ -307,6 +309,8 @@ class EEGEncoder(nn.Module):
         for key in list(checkpoint_model.keys()):
             if "relative_position_index" in key:
                 checkpoint_model.pop(key)
+
+        return checkpoint_model
 
 
 class DownstreamDataset(Dataset):
@@ -321,7 +325,8 @@ class DownstreamDataset(Dataset):
         sample = self.data.iloc[idx]
         eeg = sample['eeg']
         target_audio = sample['target_audio']
-        negative_audio = sample['negetive_audio']
+        negative_audio_key = 'negetive_audio' if 'negetive_audio' in sample else 'negative_audio'
+        negative_audio = sample[negative_audio_key]
         label = sample['attended_label']
         
         eeg_tensor = torch.tensor(eeg, dtype=torch.float32)
@@ -944,7 +949,7 @@ class CLIPModel(nn.Module):
     def load_pretrained_weights(self, pretrained_path):
         """加载预训练权重"""
         print(f"Loading pretrained weights from {pretrained_path}")
-        checkpoint = torch.load(pretrained_path, map_location='cpu')
+        checkpoint = utils.load_trusted_checkpoint(pretrained_path, map_location='cpu')
         
         # 提取模型状态字典
         if 'model_state_dict' in checkpoint:

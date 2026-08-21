@@ -315,18 +315,17 @@ class MultimodalRealTrainer(BaseTrainer):
                     # 数据已经在collate_fn中移动到设备，不需要再次移动
                     
                     # 使用对比学习评估方式
-                    total_correct_batch, total_samples_batch, loss_batch = self._evaluate_contrastive(
-                        eeg, target_audio, negative_audio
-                    )
+                    (
+                        total_correct_batch,
+                        total_samples_batch,
+                        loss_batch,
+                        batch_predictions,
+                        batch_labels,
+                    ) = self._evaluate_contrastive(eeg, target_audio, negative_audio)
                     
                     total_correct += total_correct_batch
                     total_samples += total_samples_batch
                     total_loss += loss_batch
-                    
-                    # 对于对比学习，预测是二分类（target vs negative）
-                    # 这里我们假设target是正确的选择
-                    batch_predictions = [1] * total_samples_batch  # 简化处理
-                    batch_labels = [1] * total_samples_batch
                     
                 else:  # EEG4EMO格式: (eeg, audio, labels)
                     eeg, audio, labels = batch
@@ -382,7 +381,7 @@ class MultimodalRealTrainer(BaseTrainer):
         correct = (predictions == labels).sum().item()
         total = labels.size(0)
         
-        return correct, total, loss.item()
+        return correct, total, loss.item(), predictions.cpu().numpy(), labels.cpu().numpy()
     
     def _get_clip_probabilities(self, estimates, candidates):
         """计算CLIP概率（参考MindMix_clip_finetune.py）"""
@@ -648,4 +647,4 @@ def create_trainer(strategy, model, device, args):
     elif strategy == 'multimodal_prototype':
         return MultimodalPrototypeTrainer(model, device, args)
     else:
-        raise ValueError(f"Unsupported strategy: {strategy}") 
+        raise ValueError(f"Unsupported strategy: {strategy}")

@@ -256,12 +256,12 @@ class EEGEncoder(nn.Module):
                 checkpoint = torch.hub.load_state_dict_from_url(
                     self.args.finetune, map_location='cpu', check_hash=True)
             else:
-                checkpoint = torch.load(self.args.finetune, map_location='cpu')
+                checkpoint = utils.load_trusted_checkpoint(self.args.finetune, map_location='cpu')
 
             print("Load checkpoint from %s" % self.args.finetune)
             checkpoint_model = self.get_checkpoint_model(checkpoint)
 
-            self.adjust_checkpoint_keys(checkpoint_model, model)
+            checkpoint_model = self.adjust_checkpoint_keys(checkpoint_model, model)
             utils.load_state_dict(model, checkpoint_model, prefix=self.args.model_prefix)
 
         model.to(self.device)
@@ -290,6 +290,8 @@ class EEGEncoder(nn.Module):
             for key in all_keys:
                 if key.startswith('student.'):
                     new_dict[key[8:]] = checkpoint_model[key]
+                else:
+                    new_dict[key] = checkpoint_model[key]
 
             checkpoint_model = new_dict
 
@@ -302,6 +304,8 @@ class EEGEncoder(nn.Module):
         for key in list(checkpoint_model.keys()):
             if "relative_position_index" in key:
                 checkpoint_model.pop(key)
+
+        return checkpoint_model
 
 
 class PretrainDataset(Dataset):
@@ -808,11 +812,12 @@ class CLARA_Enhanced(nn.Module):
 
 class CLARA(nn.Module):
     """CLARA (Cross-modal Low-rank Alignment) - 真正的Shared Low-Rank Alignment机制"""
-    def __init__(self, embed_dim=256, num_heads=4, ffn_hidden_factor=2, low_rank_factor=0.5, dropout_rate=0.1):
+    def __init__(self, embed_dim=256, num_heads=4, ffn_hidden_factor=2, low_rank_factor=0.5, dropout_rate=0.1, use_auditory_type=False):
         super().__init__()
         self.embed_dim = embed_dim
         self.num_heads = num_heads
         self.head_dim = embed_dim // num_heads
+        self.use_auditory_type = use_auditory_type
         
         # 使用较小的FFN扩张倍数，避免过拟合
         ffn_hidden_dim = embed_dim * ffn_hidden_factor
@@ -854,7 +859,13 @@ class CLARA(nn.Module):
         
         # === 关键：Shared Low-Rank Alignment (CLARA的核心机制) ===
         # WU: 投影到共享低秩空间（图片中的上行箭头）
-        self.W_U_eeg = nn.Linear(embed_dim, self.low_rank_dim)     # EEG -> 共享空间
+        if self.use_auditory_type:
+            self.type_aligners = nn.ModuleList([
+                nn.Linear(embed_dim, self.low_rank_dim)
+                for _ in range(3)
+            ])
+        else:
+            self.W_U_eeg = nn.Linear(embed_dim, self.low_rank_dim)     # EEG -> 共享空间
         self.W_U_audio = nn.Linear(embed_dim, self.low_rank_dim)   # Audio -> 共享空间
         
         # H: 共享交互层（图片中间的 f|H 部分）

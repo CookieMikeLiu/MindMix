@@ -17,6 +17,7 @@ import torch
 from einops import rearrange
 
 from modeling_finetune_2 import labram_base_patch200_200
+from utils import load_trusted_checkpoint
 
 
 def build_mindmix_eeg_encoder(checkpoint_path: str, device: str = "cpu"):
@@ -46,6 +47,7 @@ def build_mindmix_eeg_encoder(checkpoint_path: str, device: str = "cpu"):
         use_mean_pooling=True,  # Output: [B, 200]
         use_rel_pos_bias=True,
         use_abs_pos_emb=True,
+        init_values=0.1,
         qkv_bias=True,
     )
     # Replace the head with Identity so we get pure features
@@ -61,7 +63,7 @@ def build_mindmix_eeg_encoder(checkpoint_path: str, device: str = "cpu"):
             "  git lfs pull"
         )
 
-    ckpt = torch.load(checkpoint_path, map_location="cpu")
+    ckpt = load_trusted_checkpoint(checkpoint_path, map_location="cpu")
 
     # The fusion script saves the whole CLIPModel under this key
     state_dict = ckpt.get("model_state_dict", ckpt)
