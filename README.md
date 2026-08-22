@@ -28,41 +28,35 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 | **🔬 Foundation Model** | Pre-trained on 3,000+ hours of EEG data for generalized neural representations |
 | **🎵 Multimodal Fusion** | Novel CALRA module for EEG-audio cross-modal alignment |
 | **🎯 Multi-Task Support** | Auditory attention decoding, emotion recognition, cross-modal retrieval |
-| **⚡ Flexible Fine-tuning** | Three strategies: EEG-only, multimodal real, and multimodal prototype |
+| **⚡ Reproducible Fine-tuning** | Recommended CALRA-based downstream workflow, with ablation strategies retained for advanced use |
 | **📈 SOTA Results** | Substantially surpasses existing baselines across diverse auditory tasks |
 
 ---
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    MindMix Architecture                          │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                  │
-│  Stage 1: EEG Foundation Pre-training                           │
-│  ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐   │
-│  │  EEG Input  │────▶│  EEG Encoder    │────▶│ EEG Features│   │
-│  │  (>3000hrs) │     │   (Pre-trained) │     │  (General)  │   │
-│  └─────────────┘     └─────────────────┘     └─────────────┘   │
-│                                                                  │
-│  Stage 2: Neural-Acoustic Alignment                             │
-│  ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐   │
-│  │  EEG Embed  │────▶│             │────▶│  Aligned EEG    │   │
-│  │             │     │    CALRA    │     │  Representation │   │
-│  └─────────────┘     │   Module    │     └─────────────────┘   │
-│  ┌─────────────┐     │ (Low-Rank  │                            │
-│  │Audio Embed  │────▶│ Cross-Attn)│                            │
-│  │ (>100hrs)   │     └─────────────┘                            │
-│  └─────────────┘                                                │
-│                                                                  │
-│  Downstream Tasks                                               │
-│  ┌────────────────┐  ┌────────────────┐  ┌────────────────┐    │
-│  │Attention Decode│  │Emotion Recogn. │  │Cross-Modal     │    │
-│  │    (KUL/DTU)   │  │   (EEG4EMO)    │  │   Retrieval    │    │
-│  └────────────────┘  └────────────────┘  └────────────────┘    │
-│                                                                  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph S1["Stage 1: EEG Foundation Pre-training"]
+        A["EEG Input<br/>(>3000 hours)"] --> B["EEG Encoder<br/>(pre-trained)"] --> C["General EEG Features"]
+    end
+
+    subgraph S2["Stage 2: Neural-Acoustic Alignment"]
+        D["EEG Embedding"] --> F["CALRA Module<br/>(Cross-Attention<br/>Low-Rank Alignment)"]
+        E["Audio Embedding<br/>(>100 hours)"] --> F
+        F --> G["Aligned EEG<br/>Representation"]
+    end
+
+    subgraph S3["Downstream Tasks"]
+        H["Auditory Attention<br/>Decoding<br/>(KUL/DTU)"]
+        I["Auditory Emotion<br/>Recognition<br/>(EEG4EMO)"]
+        J["Cross-Modal<br/>Retrieval"]
+    end
+
+    C --> D
+    G --> H
+    G --> I
+    G --> J
 ```
 
 ### CALRA Module
@@ -320,28 +314,15 @@ MindMix/
 
 ---
 
-## 🧪 Fine-tuning Strategies
+## 🧪 Fine-tuning Notes
 
-### 1. EEG-Only (`eeg_only`)
-Baseline using only EEG encoder for classification.
+For reproducing the reported MindMix results, we recommend using
+`multimodal_real` with `--fusion_method calra` and loading the released
+MindMix EEG-audio checkpoint via `--pretrained_model`.
 
-```bash
-python universal_eeg_finetune.py --strategy eeg_only --dataset EEG4EMO
-```
-
-### 2. Multimodal Real (`multimodal_real`)
-Uses real paired EEG-audio data with CALRA fusion.
-
-```bash
-python universal_eeg_finetune.py --strategy multimodal_real --fusion_method calra
-```
-
-### 3. Multimodal Prototype (`multimodal_prototype`)
-Uses EEG with pseudo-audio prototypes for lightweight training.
-
-```bash
-python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method calra
-```
+The `eeg_only` and `multimodal_prototype` strategies are retained in the code
+for ablation and advanced experiments, but they are not the recommended path for
+reproducing the main paper results.
 
 ---
 
@@ -374,6 +355,7 @@ load `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` with
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `--model` | `labram_base_patch200_200` | EEG backbone architecture identifier used to instantiate the EEG encoder |
+| `--strategy` | `eeg_only` | Fine-tuning route. Use `multimodal_real` with `--pretrained_model` for the released MindMix downstream results; `eeg_only` and `multimodal_prototype` are retained for ablations. |
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
 | `--fusion_method` | `calra` | Fusion module: `calra`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `calra_enhanced` |
