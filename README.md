@@ -169,6 +169,14 @@ We provide the pre-trained MindMix fusion checkpoint at:
 If this file is only a small Git LFS pointer after cloning, run `git lfs pull`
 from the repository root.
 
+The repository contains two different kinds of checkpoints:
+
+| Path | Role |
+|------|------|
+| `checkpoints/labram-base.pth` | Default LaBraM Base EEG backbone checkpoint used by `--finetune`. This initializes the EEG encoder before MindMix fusion weights are loaded. |
+| `checkpoints/v2.4_large.pth` | Optional LaBraM Large backbone checkpoint kept for advanced experiments. The released MindMix scripts and reported checkpoint use the Base architecture by default, so this file is not a drop-in replacement for the released `--pretrained_model` path. |
+| `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix EEG-audio fusion checkpoint used by `--pretrained_model` for downstream fine-tuning. |
+
 To extract and use the **EEG encoder** from this checkpoint:
 
 ```python
@@ -249,28 +257,40 @@ reader-facing example rather than a training or evaluation script.
 
 ```
 MindMix/
-├── MindMix_clip_pretrain.py      # Stage 2: EEG-audio alignment training
-├── MindMix_clip_finetune.py      # Stage 3: AAD fine-tuning
-├── universal_eeg_finetune.py     # Universal fine-tuning framework
-├── universal_models.py           # Model architectures (CLARA, ClipLoss)
-├── universal_trainer.py          # Training utilities
-├── utils.py                      # General utilities
-├── modeling_finetune_2.py        # LaBraM model implementation
-├── pretrain_fusion_checkpoints/  # Pre-trained model checkpoints
-└── README.md                     # This file
+|-- checkpoints/                  # LaBraM backbone checkpoints used by --finetune
+|   |-- labram-base.pth           # Default LaBraM Base checkpoint for released scripts
+|   `-- v2.4_large.pth            # Optional LaBraM Large checkpoint for experiments
+|-- pretrain_fusion_checkpoints/  # MindMix fusion checkpoints used by --pretrained_model
+|   `-- best_model_loss_0.0909.pth
+|-- MindMix_clip_pretrain.py      # Stage 2: EEG-audio alignment pre-training
+|-- MindMix_clip_finetune.py      # Task-specific AAD fine-tuning script
+|-- universal_eeg_finetune.py     # Recommended downstream fine-tuning entry point
+|-- universal_models.py           # Universal downstream model wrappers and CLARA/ClipLoss
+|-- universal_trainer.py          # Universal training and evaluation loops
+|-- modeling_finetune_2.py        # LaBraM backbone architecture definitions
+|-- load_pretrained_eeg.py        # Example: extract EEG encoder from fusion checkpoint
+|-- quick_start.py                # Synthetic smoke-test/demo script
+|-- utils.py                      # Checkpoint loading and shared utilities
+|-- requirements.txt              # Python dependencies
+`-- README.md
 ```
 
 ### File Descriptions
 
-| File | Description |
-|------|-------------|
+| File or directory | Description |
+|-------------------|-------------|
+| `checkpoints/` | LaBraM backbone checkpoints. `labram-base.pth` is the default used by `--finetune`; `v2.4_large.pth` is optional and not used by the released Base-architecture commands. |
+| `pretrain_fusion_checkpoints/` | Released MindMix fusion checkpoint directory. `best_model_loss_0.0909.pth` is the default `--pretrained_model`. |
 | `MindMix_clip_pretrain.py` | Pre-trains EEG encoder with CLIP-style contrastive learning on EEG-audio pairs |
-| `MindMix_clip_finetune.py` | Fine-tunes the model on specific downstream tasks |
-| `universal_eeg_finetune.py` | Universal framework supporting multiple datasets and strategies |
+| `MindMix_clip_finetune.py` | Task-specific fine-tuning script retained for AAD experiments |
+| `universal_eeg_finetune.py` | Recommended universal fine-tuning framework supporting multiple datasets and strategies |
 | `universal_models.py` | Core model components: CLARA module, ClipLoss, classification heads |
+| `universal_trainer.py` | Training and evaluation loops for EEG-only, multimodal real, and multimodal prototype strategies |
+| `modeling_finetune_2.py` | LaBraM backbone definitions, including Base/Large/Huge variants |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
 | `quick_start.py` | Lightweight demo using synthetic tensors to verify installation and core modules |
 | `load_pretrained_eeg.py` | Runnable example for extracting and using the EEG encoder from a MindMix checkpoint |
+| `requirements.txt` | Python package requirements |
 
 ---
 
@@ -335,12 +355,20 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 
 ### Model Parameters
 
+`--model` selects the LaBraM EEG backbone architecture. The released MindMix
+checkpoint and README commands use `labram_base_patch200_200`, whose EEG
+features are 200-dimensional before projection into the 256-dimensional fusion
+space. `checkpoints/v2.4_large.pth` corresponds to a larger LaBraM backbone and
+is included for experiments; using it requires matching architecture/projection
+changes and a compatible fusion checkpoint.
+
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--model` | `labram_base_patch200_200` | Model architecture |
+| `--model` | `labram_base_patch200_200` | LaBraM EEG backbone architecture used to instantiate the EEG encoder |
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
 | `--fusion_method` | `clara` | Fusion module: `clara`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `clara_enhanced` |
+| `--finetune` | `checkpoints/labram-base.pth` | LaBraM EEG backbone checkpoint loaded before fusion fine-tuning |
 | `--pretrained_model` | `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix fusion checkpoint used for downstream fine-tuning |
 | `--use_auditory_type` | disabled | Optional auditory-type-specific CLARA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
 
