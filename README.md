@@ -285,7 +285,7 @@ MindMix/
 | `universal_eeg_finetune.py` | Recommended universal fine-tuning framework supporting multiple datasets and strategies |
 | `universal_models.py` | Core model components: CALRA module, ClipLoss, classification heads |
 | `universal_trainer.py` | Training and evaluation loops for EEG-only, multimodal real, and multimodal prototype strategies |
-| `modeling_finetune_2.py` | EEG backbone architecture code used to instantiate the encoder before loading Stage-1 or MindMix checkpoints; the released commands instantiate `labram_base_patch200_200` |
+| `modeling_finetune_2.py` | EEG backbone implementation used to instantiate the encoder before loading the MindMix checkpoint |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
 | `quick_start.py` | Lightweight demo using synthetic tensors to verify installation and core modules |
 | `load_pretrained_eeg.py` | Runnable example for extracting and using the EEG encoder from a MindMix checkpoint |
