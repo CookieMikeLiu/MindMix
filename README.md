@@ -169,13 +169,18 @@ We provide the pre-trained MindMix fusion checkpoint at:
 If this file is only a small Git LFS pointer after cloning, run `git lfs pull`
 from the repository root.
 
-The repository contains two different kinds of checkpoints:
+For the reported MindMix downstream results, the model is initialized from our
+MindMix EEG-audio pre-training checkpoint via `--pretrained_model`. The LaBraM
+files in `checkpoints/` are backbone initialization files, not the final MindMix
+pre-trained model. In the downstream scripts, `--finetune` first builds/loads the
+EEG backbone, and `--pretrained_model` then loads the released MindMix EEG,
+audio, projection, and fusion weights.
 
 | Path | Role |
 |------|------|
-| `checkpoints/labram-base.pth` | Default LaBraM Base EEG backbone checkpoint used by `--finetune`. This initializes the EEG encoder before MindMix fusion weights are loaded. |
-| `checkpoints/v2.4_large.pth` | Optional LaBraM Large backbone checkpoint kept for advanced experiments. The released MindMix scripts and reported checkpoint use the Base architecture by default, so this file is not a drop-in replacement for the released `--pretrained_model` path. |
-| `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix EEG-audio fusion checkpoint used by `--pretrained_model` for downstream fine-tuning. |
+| `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix EEG-audio pre-training checkpoint. This is the checkpoint used by `--pretrained_model` for downstream fine-tuning and corresponds to the reported MindMix results. |
+| `checkpoints/labram-base.pth` | Default LaBraM Base EEG backbone initialization used by `--finetune` before loading the MindMix checkpoint. |
+| `checkpoints/v2.4_large.pth` | Optional LaBraM Large backbone checkpoint kept for advanced experiments. It is not used by the released Base-architecture MindMix checkpoint and is not a drop-in replacement for `--pretrained_model`. |
 
 To extract and use the **EEG encoder** from this checkpoint:
 
@@ -257,10 +262,10 @@ reader-facing example rather than a training or evaluation script.
 
 ```
 MindMix/
-|-- checkpoints/                  # LaBraM backbone checkpoints used by --finetune
+|-- checkpoints/                  # LaBraM backbone initialization files used by --finetune
 |   |-- labram-base.pth           # Default LaBraM Base checkpoint for released scripts
 |   `-- v2.4_large.pth            # Optional LaBraM Large checkpoint for experiments
-|-- pretrain_fusion_checkpoints/  # MindMix fusion checkpoints used by --pretrained_model
+|-- pretrain_fusion_checkpoints/  # Released MindMix pre-training checkpoints
 |   `-- best_model_loss_0.0909.pth
 |-- MindMix_clip_pretrain.py      # Stage 2: EEG-audio alignment pre-training
 |-- MindMix_clip_finetune.py      # Task-specific AAD fine-tuning script
@@ -279,8 +284,8 @@ MindMix/
 
 | File or directory | Description |
 |-------------------|-------------|
-| `checkpoints/` | LaBraM backbone checkpoints. `labram-base.pth` is the default used by `--finetune`; `v2.4_large.pth` is optional and not used by the released Base-architecture commands. |
-| `pretrain_fusion_checkpoints/` | Released MindMix fusion checkpoint directory. `best_model_loss_0.0909.pth` is the default `--pretrained_model`. |
+| `pretrain_fusion_checkpoints/` | Released MindMix EEG-audio pre-training checkpoint directory. `best_model_loss_0.0909.pth` is the default `--pretrained_model` used for downstream fine-tuning. |
+| `checkpoints/` | LaBraM backbone initialization files. `labram-base.pth` is the default used by `--finetune`; `v2.4_large.pth` is optional and not used by the released Base-architecture MindMix commands. |
 | `MindMix_clip_pretrain.py` | Pre-trains EEG encoder with CLIP-style contrastive learning on EEG-audio pairs |
 | `MindMix_clip_finetune.py` | Task-specific fine-tuning script retained for AAD experiments |
 | `universal_eeg_finetune.py` | Recommended universal fine-tuning framework supporting multiple datasets and strategies |
@@ -355,12 +360,13 @@ MindMix substantially surpasses existing baselines across multiple auditory deco
 
 ### Model Parameters
 
-`--model` selects the LaBraM EEG backbone architecture. The released MindMix
-checkpoint and README commands use `labram_base_patch200_200`, whose EEG
-features are 200-dimensional before projection into the 256-dimensional fusion
-space. `checkpoints/v2.4_large.pth` corresponds to a larger LaBraM backbone and
-is included for experiments; using it requires matching architecture/projection
-changes and a compatible fusion checkpoint.
+`--model` selects the LaBraM EEG backbone architecture used inside MindMix. The
+released MindMix pre-trained checkpoint and README commands use
+`labram_base_patch200_200`, whose EEG features are 200-dimensional before
+projection into the 256-dimensional fusion space. `checkpoints/v2.4_large.pth`
+corresponds to a larger LaBraM backbone and is included for experiments; using
+it requires matching architecture/projection changes and a compatible MindMix
+fusion checkpoint.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
@@ -368,8 +374,8 @@ changes and a compatible fusion checkpoint.
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
 | `--fusion_method` | `clara` | Fusion module: `clara`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `clara_enhanced` |
-| `--finetune` | `checkpoints/labram-base.pth` | LaBraM EEG backbone checkpoint loaded before fusion fine-tuning |
-| `--pretrained_model` | `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix fusion checkpoint used for downstream fine-tuning |
+| `--finetune` | `checkpoints/labram-base.pth` | LaBraM EEG backbone initialization checkpoint |
+| `--pretrained_model` | `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix EEG-audio pre-training checkpoint used for downstream fine-tuning |
 | `--use_auditory_type` | disabled | Optional auditory-type-specific CLARA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
 
 ### Training Parameters
