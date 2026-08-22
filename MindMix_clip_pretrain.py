@@ -120,8 +120,8 @@ def get_args():
                         help='Do not random erase first (clean) augmentation split')
 
     # * Finetuning params
-    parser.add_argument('--finetune', default='./checkpoints/labram-base.pth',  # 预训练用labram-base
-                        help='finetune from checkpoint')
+    parser.add_argument('--finetune', default='',
+                        help='Optional EEG backbone initialization checkpoint')
     parser.add_argument('--model_key', default='model|module', type=str)
     parser.add_argument('--model_prefix', default='', type=str)
     parser.add_argument('--model_filter_name', default='gzp', type=str)

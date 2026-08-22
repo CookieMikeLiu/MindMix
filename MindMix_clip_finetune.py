@@ -123,8 +123,8 @@ def get_args():
     # * Finetuning params  
     parser.add_argument('--pretrained_model', default='./pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',  # 预训练模型路径
                         help='Path to the pretrained CLIP model checkpoint')
-    parser.add_argument('--finetune', default='./checkpoints/labram-base.pth',  # EEG encoder的初始checkpoint
-                        help='finetune from checkpoint')
+    parser.add_argument('--finetune', default='',
+                        help='Optional EEG backbone initialization checkpoint')
     parser.add_argument('--model_key', default='model|module', type=str)
     parser.add_argument('--model_prefix', default='', type=str)
     parser.add_argument('--model_filter_name', default='gzp', type=str)

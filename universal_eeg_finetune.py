@@ -94,8 +94,8 @@ def get_args():
     # 模型参数
     parser.add_argument('--pretrained_model', default='pretrain_fusion_checkpoints/best_model_loss_0.0909.pth',
                         help='Path to pretrained model (for eeg_only: EEG encoder, for multimodal: fusion model)')
-    parser.add_argument('--finetune', default='checkpoints/labram-base.pth',
-                        help='EEG encoder checkpoint')
+    parser.add_argument('--finetune', default='',
+                        help='Optional EEG backbone initialization checkpoint')
     parser.add_argument('--use_auditory_type', action='store_true', default=False,
                         help='Whether to use auditory type-specific aligners')
     
