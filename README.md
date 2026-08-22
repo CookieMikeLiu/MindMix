@@ -275,7 +275,7 @@ MindMix/
 |-- universal_eeg_finetune.py     # Recommended downstream fine-tuning entry point
 |-- universal_models.py           # Universal downstream model wrappers and CLARA/ClipLoss
 |-- universal_trainer.py          # Universal training and evaluation loops
-|-- modeling_finetune_2.py        # LaBraM backbone architecture definitions
+|-- modeling_finetune_2.py        # EEG backbone implementation used by MindMix
 |-- load_pretrained_eeg.py        # Example: extract EEG encoder from fusion checkpoint
 |-- quick_start.py                # Synthetic smoke-test/demo script
 |-- utils.py                      # Checkpoint loading and shared utilities
@@ -294,7 +294,7 @@ MindMix/
 | `universal_eeg_finetune.py` | Recommended universal fine-tuning framework supporting multiple datasets and strategies |
 | `universal_models.py` | Core model components: CLARA module, ClipLoss, classification heads |
 | `universal_trainer.py` | Training and evaluation loops for EEG-only, multimodal real, and multimodal prototype strategies |
-| `modeling_finetune_2.py` | LaBraM backbone definitions, including Base/Large/Huge variants |
+| `modeling_finetune_2.py` | EEG backbone implementation adapted from LaBraM and used by the MindMix scripts; the released commands instantiate `labram_base_patch200_200` |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
 | `quick_start.py` | Lightweight demo using synthetic tensors to verify installation and core modules |
 | `load_pretrained_eeg.py` | Runnable example for extracting and using the EEG encoder from a MindMix checkpoint |
