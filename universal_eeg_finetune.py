@@ -16,10 +16,10 @@
 
 Usage:
     # EEG4EMO情绪分类
-    python universal_eeg_finetune.py --dataset EEG4EMO --strategy multimodal_real --fusion_method clara
+    python universal_eeg_finetune.py --dataset EEG4EMO --strategy multimodal_real --fusion_method calra
     
     # KUL/DTU对比学习评估
-    python universal_eeg_finetune.py --dataset KUL --strategy multimodal_real --fusion_method clara
+    python universal_eeg_finetune.py --dataset KUL --strategy multimodal_real --fusion_method calra
     
     # 对比学习评估示例
     python run_contrastive_example.py
@@ -87,8 +87,8 @@ def get_args():
     parser.add_argument('--strategy', default='eeg_only', type=str,
                         choices=['eeg_only', 'multimodal_real', 'multimodal_prototype'],
                         help='Fine-tuning strategy')
-    parser.add_argument('--fusion_method', default='clara', type=str,
-                        choices=['cross_attention', 'simple_fusion', 'bidirectional_fusion', 'clara_enhanced', 'clara'],
+    parser.add_argument('--fusion_method', default='calra', type=str,
+                        choices=['cross_attention', 'simple_fusion', 'bidirectional_fusion', 'calra_enhanced', 'calra'],
                         help='Cross-modal fusion method')
     
     # 模型参数

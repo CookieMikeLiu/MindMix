@@ -179,11 +179,11 @@ def get_args():
                         help='Path to the dataset directory containing pkl files')
     parser.add_argument('--temperature', default=0.07, type=float,
                         help='Temperature for contrastive learning')
-    parser.add_argument('--fusion_method', default='clara', type=str, 
-                        choices=['cross_attention', 'simple_fusion', 'bidirectional_fusion', 'clara_enhanced', 'clara'],
+    parser.add_argument('--fusion_method', default='calra', type=str,
+                        choices=['cross_attention', 'simple_fusion', 'bidirectional_fusion', 'calra_enhanced', 'calra'],
                         help='Cross-modal fusion method to use')
     parser.add_argument('--use_auditory_type', action='store_true', default=False,
-                        help='Whether to use auditory type-specific aligners in CLARA')
+                        help='Whether to use auditory type-specific aligners in CALRA')
 
     known_args, _ = parser.parse_known_args()
 
@@ -657,8 +657,8 @@ class CrossModalFusion_Bidirectional(nn.Module):
         return aligned_eeg, aligned_audio
 
 
-class CLARA_Enhanced(nn.Module):
-    """增强版CLARA - 基于成功模式的自注意力+FFN+稳定交互"""
+class CALRA_Enhanced(nn.Module):
+    """增强版CALRA - 基于成功模式的自注意力+FFN+稳定交互"""
     def __init__(self, embed_dim=256, num_heads=4, ffn_hidden_factor=2, low_rank_factor=0.5, dropout_rate=0.1):
         super().__init__()
         self.embed_dim = embed_dim
@@ -743,7 +743,7 @@ class CLARA_Enhanced(nn.Module):
     
     def forward(self, eeg, audio):
         """
-        增强版CLARA处理流程：自注意力 -> 跨模态交互 -> FFN
+        增强版CALRA处理流程：自注意力 -> 跨模态交互 -> FFN
         """
         B = eeg.size(0)
         
@@ -810,8 +810,8 @@ class CLARA_Enhanced(nn.Module):
         return aligned_eeg, aligned_audio
 
 
-class CLARA(nn.Module):
-    """CLARA (Cross-modal Low-rank Alignment) - 真正的Shared Low-Rank Alignment机制"""
+class CALRA(nn.Module):
+    """CALRA (Cross-Attention Low-Rank Alignment) - 真正的Shared Low-Rank Alignment机制"""
     def __init__(self, embed_dim=256, num_heads=4, ffn_hidden_factor=2, low_rank_factor=0.5, dropout_rate=0.1, use_auditory_type=False):
         super().__init__()
         self.embed_dim = embed_dim
@@ -857,7 +857,7 @@ class CLARA(nn.Module):
         )
         self.audio_norm2 = nn.LayerNorm(embed_dim)
         
-        # === 关键：Shared Low-Rank Alignment (CLARA的核心机制) ===
+        # === 关键：Shared Low-Rank Alignment (CALRA的核心机制) ===
         # WU: 投影到共享低秩空间（图片中的上行箭头）
         if self.use_auditory_type:
             self.type_aligners = nn.ModuleList([
@@ -907,8 +907,8 @@ class CLARA(nn.Module):
     
     def forward(self, eeg, audio, auditory_type=None):
         """
-        CLARA架构：Multi-Headed Attention -> Shared Low-Rank Alignment -> Feed Forward
-        完全对应CLARA论文图片中的流程
+        CALRA架构：Multi-Headed Attention -> Shared Low-Rank Alignment -> Feed Forward
+        完全对应CALRA论文图片中的流程
         
         Args:
             eeg: EEG特征 [B, embed_dim]
@@ -932,7 +932,7 @@ class CLARA(nn.Module):
         )
         audio_after_self = self.audio_norm1(audio + self.dropout(audio_self_attn))  # Add & Norm
         
-        # === 第二阶段：Shared Low-Rank Alignment (CLARA的核心机制) ===
+        # === 第二阶段：Shared Low-Rank Alignment (CALRA的核心机制) ===
         # 步骤1: WU - 投影到共享低秩空间
         if self.use_auditory_type and auditory_type is not None:
             # 使用type-specific aligner
@@ -1004,12 +1004,12 @@ class CLIPModel(nn.Module):
             self.fusion_module = CrossModalFusion_Simple(embed_dim=256)
         elif fusion_method == 'bidirectional_fusion':
             self.fusion_module = CrossModalFusion_Bidirectional(embed_dim=256)
-        elif fusion_method == 'clara_enhanced':
-            self.fusion_module = CLARA_Enhanced(embed_dim=256)
-        elif fusion_method == 'clara':
-            self.fusion_module = CLARA(embed_dim=256, use_auditory_type=use_auditory_type)
+        elif fusion_method == 'calra_enhanced':
+            self.fusion_module = CALRA_Enhanced(embed_dim=256)
+        elif fusion_method == 'calra':
+            self.fusion_module = CALRA(embed_dim=256, use_auditory_type=use_auditory_type)
         else:
-            raise ValueError(f"Unsupported fusion method: {fusion_method}. Choose from: 'cross_attention', 'simple_fusion', 'bidirectional_fusion', 'clara_enhanced', 'clara'")
+            raise ValueError(f"Unsupported fusion method: {fusion_method}. Choose from: 'cross_attention', 'simple_fusion', 'bidirectional_fusion', 'calra_enhanced', 'calra'")
         
         # 最终分类器（在预训练中不使用）
 
@@ -1037,14 +1037,14 @@ class CLIPModel(nn.Module):
             aligned_eeg, aligned_audio = self.fusion_module(eeg_emb, target_audio_emb)
             fused_eeg = aligned_eeg  # [B,256]
             final_audio_emb = aligned_audio  # 使用双向对齐后的音频特征
-        elif self.fusion_method == 'clara_enhanced':
-            # CLARA增强版本
+        elif self.fusion_method == 'calra_enhanced':
+            # CALRA增强版本
             fused_eeg, aligned_audio = self.fusion_module(eeg_emb, target_audio_emb)
             final_audio_emb = aligned_audio  # 使用增强对齐后的音频特征
-        elif self.fusion_method == 'clara':
-            # CLARA (真正的Shared Low-Rank Alignment)
+        elif self.fusion_method == 'calra':
+            # CALRA (真正的Shared Low-Rank Alignment)
             fused_eeg, aligned_audio = self.fusion_module(eeg_emb, target_audio_emb, auditory_type)
-            final_audio_emb = aligned_audio  # 使用CLARA对齐后的音频特征
+            final_audio_emb = aligned_audio  # 使用CALRA对齐后的音频特征
         
         if negative_audio is not None:
             negative_audio_emb = self.audio_model(negative_audio).last_hidden_state.mean(1)
@@ -1055,12 +1055,12 @@ class CLIPModel(nn.Module):
                 # 双向融合需要对负样本也进行对齐
                 _, aligned_negative_audio = self.fusion_module(eeg_emb, negative_audio_emb)
                 negative_audio_emb = aligned_negative_audio
-            elif self.fusion_method == 'clara_enhanced':
-                # CLARA增强版本需要对负样本也进行对齐
+            elif self.fusion_method == 'calra_enhanced':
+                # CALRA增强版本需要对负样本也进行对齐
                 _, aligned_negative_audio = self.fusion_module(eeg_emb, negative_audio_emb)
                 negative_audio_emb = aligned_negative_audio
-            elif self.fusion_method == 'clara':
-                # CLARA需要对负样本也进行对齐
+            elif self.fusion_method == 'calra':
+                # CALRA需要对负样本也进行对齐
                 _, aligned_negative_audio = self.fusion_module(eeg_emb, negative_audio_emb, auditory_type)
                 negative_audio_emb = aligned_negative_audio
             # 其他方法保持负样本音频特征不变以保持对比学习稳定性
@@ -1324,8 +1324,8 @@ def main():
     model = CLIPModel(eeg_model, audio_model, fusion_method=args.fusion_method, use_auditory_type=args.use_auditory_type)
     
     print(f"Using fusion method: {args.fusion_method}")
-    if args.fusion_method == 'clara':
-        print("CLARA (Cross-modal Low-rank Alignment) - True Shared Low-Rank Alignment")
+    if args.fusion_method == 'calra':
+        print("CALRA (Cross-Attention Low-Rank Alignment) - True Shared Low-Rank Alignment")
         if args.use_auditory_type:
             print("Using auditory type-specific aligners")
         else:
@@ -1334,8 +1334,8 @@ def main():
         print("Simple Cross-Modal Fusion - Best performing simple version")
     elif args.fusion_method == 'bidirectional_fusion':
         print("Bidirectional Cross-Modal Fusion - Dual alignment with controlled strength")
-    elif args.fusion_method == 'clara_enhanced':
-        print("CLARA Enhanced - Self-attention + FFN + stable cross-modal interaction")
+    elif args.fusion_method == 'calra_enhanced':
+        print("CALRA Enhanced - Self-attention + FFN + stable cross-modal interaction")
     elif args.fusion_method == 'cross_attention':
         print("CrossModalAttention - Stable baseline")
     

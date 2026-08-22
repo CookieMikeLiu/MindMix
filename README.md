@@ -16,7 +16,7 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 **MindMix** addresses this challenge through:
 
 - 🧠 **Two-Stage Training Strategy**: Generalized EEG feature learning followed by neural-acoustic alignment
-- 🔄 **Cross-Attention Low-Rank Alignment (CLARA)**: Novel module for fine-grained cross-modal information integration
+- 🔄 **Cross-Attention Low-Rank Alignment (CALRA)**: Novel module for fine-grained cross-modal information integration
 - 📊 **State-of-the-Art Performance**: Superior results on auditory attention decoding, emotion recognition, and cross-modal retrieval tasks
 
 ---
@@ -26,7 +26,7 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 | Feature | Description |
 |---------|-------------|
 | **🔬 Foundation Model** | Pre-trained on 3,000+ hours of EEG data for generalized neural representations |
-| **🎵 Multimodal Fusion** | Novel CLARA module for EEG-audio cross-modal alignment |
+| **🎵 Multimodal Fusion** | Novel CALRA module for EEG-audio cross-modal alignment |
 | **🎯 Multi-Task Support** | Auditory attention decoding, emotion recognition, cross-modal retrieval |
 | **⚡ Flexible Fine-tuning** | Three strategies: EEG-only, multimodal real, and multimodal prototype |
 | **📈 SOTA Results** | Substantially surpasses existing baselines across diverse auditory tasks |
@@ -42,14 +42,14 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 │                                                                  │
 │  Stage 1: EEG Foundation Pre-training                           │
 │  ┌─────────────┐     ┌─────────────────┐     ┌─────────────┐   │
-│  │  EEG Input  │────▶│  LaBraM Encoder │────▶│ EEG Features│   │
+│  │  EEG Input  │────▶│  EEG Encoder    │────▶│ EEG Features│   │
 │  │  (>3000hrs) │     │   (Pre-trained) │     │  (General)  │   │
 │  └─────────────┘     └─────────────────┘     └─────────────┘   │
 │                                                                  │
 │  Stage 2: Neural-Acoustic Alignment                             │
 │  ┌─────────────┐     ┌─────────────┐     ┌─────────────────┐   │
 │  │  EEG Embed  │────▶│             │────▶│  Aligned EEG    │   │
-│  │             │     │    CLARA    │     │  Representation │   │
+│  │             │     │    CALRA    │     │  Representation │   │
 │  └─────────────┘     │   Module    │     └─────────────────┘   │
 │  ┌─────────────┐     │ (Low-Rank  │                            │
 │  │Audio Embed  │────▶│ Cross-Attn)│                            │
@@ -65,9 +65,9 @@ Decoding complex auditory experiences from non-invasive EEG is a rapidly emergin
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### CLARA Module
+### CALRA Module
 
-The **Cross-Attention Low-Rank Alignment (CLARA)** module is our novel contribution for effective EEG-audio fusion:
+The **Cross-Attention Low-Rank Alignment (CALRA)** module is our novel contribution for effective EEG-audio fusion:
 
 - **Self-Attention Paths**: Independent processing for EEG and audio modalities
 - **Cross-Attention Fusion**: Bidirectional cross-modal attention with low-rank decomposition
@@ -141,7 +141,7 @@ python MindMix_clip_pretrain.py \
 python universal_eeg_finetune.py \
     --dataset EEG4EMO \
     --strategy multimodal_real \
-    --fusion_method clara \
+    --fusion_method calra \
     --pretrained_model pretrain_fusion_checkpoints/best_model_loss_0.0909.pth \
     --batch_size 32 \
     --epochs 50 \
@@ -155,7 +155,7 @@ python universal_eeg_finetune.py \
     --dataset KUL \
     --data_path <path_to_KUL_trail> \
     --strategy multimodal_real \
-    --fusion_method clara \
+    --fusion_method calra \
     --pretrained_model pretrain_fusion_checkpoints/best_model_loss_0.0909.pth \
     --batch_size 32 \
     --epochs 50
@@ -249,7 +249,7 @@ For a complete runnable script, see [`load_pretrained_eeg.py`](load_pretrained_e
 
 ### Sanity Check Demo
 
-To verify the installation and inspect the core CLARA and contrastive-learning
+To verify the installation and inspect the core CALRA and contrastive-learning
 components without preparing a real dataset, run:
 
 ```bash
@@ -273,7 +273,7 @@ MindMix/
 |-- MindMix_clip_pretrain.py      # Stage 2: EEG-audio alignment pre-training
 |-- MindMix_clip_finetune.py      # Task-specific AAD fine-tuning script
 |-- universal_eeg_finetune.py     # Recommended downstream fine-tuning entry point
-|-- universal_models.py           # Universal downstream model wrappers and CLARA/ClipLoss
+|-- universal_models.py           # Universal downstream model wrappers and CALRA/ClipLoss
 |-- universal_trainer.py          # Universal training and evaluation loops
 |-- modeling_finetune_2.py        # EEG backbone implementation used by MindMix
 |-- load_pretrained_eeg.py        # Example: extract EEG encoder from fusion checkpoint
@@ -292,9 +292,9 @@ MindMix/
 | `MindMix_clip_pretrain.py` | Pre-trains EEG encoder with CLIP-style contrastive learning on EEG-audio pairs |
 | `MindMix_clip_finetune.py` | Task-specific fine-tuning script retained for AAD experiments |
 | `universal_eeg_finetune.py` | Recommended universal fine-tuning framework supporting multiple datasets and strategies |
-| `universal_models.py` | Core model components: CLARA module, ClipLoss, classification heads |
+| `universal_models.py` | Core model components: CALRA module, ClipLoss, classification heads |
 | `universal_trainer.py` | Training and evaluation loops for EEG-only, multimodal real, and multimodal prototype strategies |
-| `modeling_finetune_2.py` | EEG backbone implementation adapted from LaBraM and used by the MindMix scripts; the released commands instantiate `labram_base_patch200_200` |
+| `modeling_finetune_2.py` | EEG backbone architecture code used to instantiate the encoder before loading Stage-1 or MindMix checkpoints; the released commands instantiate `labram_base_patch200_200` |
 | `utils.py` | Data loading, preprocessing, channel mapping, evaluation metrics |
 | `quick_start.py` | Lightweight demo using synthetic tensors to verify installation and core modules |
 | `load_pretrained_eeg.py` | Runnable example for extracting and using the EEG encoder from a MindMix checkpoint |
@@ -330,17 +330,17 @@ python universal_eeg_finetune.py --strategy eeg_only --dataset EEG4EMO
 ```
 
 ### 2. Multimodal Real (`multimodal_real`)
-Uses real paired EEG-audio data with CLARA fusion.
+Uses real paired EEG-audio data with CALRA fusion.
 
 ```bash
-python universal_eeg_finetune.py --strategy multimodal_real --fusion_method clara
+python universal_eeg_finetune.py --strategy multimodal_real --fusion_method calra
 ```
 
 ### 3. Multimodal Prototype (`multimodal_prototype`)
 Uses EEG with pseudo-audio prototypes for lightweight training.
 
 ```bash
-python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method clara
+python universal_eeg_finetune.py --strategy multimodal_prototype --fusion_method calra
 ```
 
 ---
@@ -373,13 +373,13 @@ load `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` with
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `--model` | `labram_base_patch200_200` | LaBraM EEG backbone architecture used to instantiate the EEG encoder |
+| `--model` | `labram_base_patch200_200` | EEG backbone architecture identifier used to instantiate the EEG encoder |
 | `--input_size` | 400 | EEG input size (time samples) |
 | `--drop_path` | 0.1 | Stochastic depth rate |
-| `--fusion_method` | `clara` | Fusion module: `clara`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `clara_enhanced` |
+| `--fusion_method` | `calra` | Fusion module: `calra`, `cross_attention`, `simple_fusion`, `bidirectional_fusion`, or `calra_enhanced` |
 | `--finetune` | `checkpoints/labram-base.pth` | EEG backbone initialization checkpoint; `checkpoints/v2.4_large.pth` is our EEG-only pre-trained checkpoint for backbone initialization/ablation |
 | `--pretrained_model` | `pretrain_fusion_checkpoints/best_model_loss_0.0909.pth` | Released MindMix EEG-audio pre-training checkpoint used for downstream fine-tuning |
-| `--use_auditory_type` | disabled | Optional auditory-type-specific CLARA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
+| `--use_auditory_type` | disabled | Optional auditory-type-specific CALRA aligners; leave disabled when a downstream dataset does not provide auditory type labels |
 
 ### Training Parameters
 

@@ -58,8 +58,8 @@ class ClipLoss(nn.Module):
         return F.cross_entropy(scores, target)
 
 
-class CLARA(nn.Module):
-    """CLARA (Cross-modal Low-rank Alignment) 融合模块"""
+class CALRA(nn.Module):
+    """CALRA (Cross-Attention Low-Rank Alignment) 融合模块"""
     def __init__(self, embed_dim=256, num_heads=4, ffn_hidden_factor=2, low_rank_factor=0.5, dropout_rate=0.1, use_auditory_type=False):
         super().__init__()
         self.embed_dim = embed_dim
@@ -352,7 +352,7 @@ class EEGOnlyModel(nn.Module):
 
 class MultimodalRealModel(nn.Module):
     """策略2: 使用真实EEG-Audio数据的多模态模型"""
-    def __init__(self, eeg_encoder, audio_encoder, fusion_method='clara', num_classes=2, use_auditory_type=False):
+    def __init__(self, eeg_encoder, audio_encoder, fusion_method='calra', num_classes=2, use_auditory_type=False):
         super().__init__()
         self.eeg_encoder = eeg_encoder
         self.audio_encoder = audio_encoder
@@ -373,8 +373,8 @@ class MultimodalRealModel(nn.Module):
         )
         
         # 融合模块
-        if fusion_method == 'clara':
-            self.fusion_module = CLARA(embed_dim=256, use_auditory_type=use_auditory_type)
+        if fusion_method == 'calra':
+            self.fusion_module = CALRA(embed_dim=256, use_auditory_type=use_auditory_type)
         else:
             raise ValueError(f"Unsupported fusion method: {fusion_method}")
         
@@ -405,7 +405,7 @@ class MultimodalRealModel(nn.Module):
         audio_features = self.audio_proj(audio_emb)
         
         # 跨模态融合
-        if self.fusion_method == 'clara':
+        if self.fusion_method == 'calra':
             fused_eeg, aligned_audio = self.fusion_module(eeg_features, audio_features)
         else:
             fused_eeg = eeg_features
@@ -439,11 +439,11 @@ class MultimodalRealModel(nn.Module):
         negative_audio_emb = self.audio_proj(negative_audio_emb)
         
         # 根据融合方法进行跨模态交互
-        if self.fusion_method == 'clara':
-            # CLARA (真正的Shared Low-Rank Alignment)
+        if self.fusion_method == 'calra':
+            # CALRA (真正的Shared Low-Rank Alignment)
             fused_eeg, aligned_audio = self.fusion_module(eeg_emb, target_audio_emb)
             _, aligned_negative_audio = self.fusion_module(eeg_emb, negative_audio_emb)
-            final_audio_emb = aligned_audio  # 使用CLARA对齐后的音频特征
+            final_audio_emb = aligned_audio  # 使用CALRA对齐后的音频特征
             negative_audio_emb = aligned_negative_audio
         else:
             # 其他融合方法
@@ -494,7 +494,7 @@ class MultimodalRealModel(nn.Module):
 
 class MultimodalPrototypeModel(nn.Module):
     """策略3: 使用伪音频原型的多模态模型"""
-    def __init__(self, eeg_encoder, audio_encoder, fusion_method='clara', num_classes=2, use_auditory_type=False):
+    def __init__(self, eeg_encoder, audio_encoder, fusion_method='calra', num_classes=2, use_auditory_type=False):
         super().__init__()
         self.eeg_encoder = eeg_encoder
         self.audio_encoder = audio_encoder
@@ -521,8 +521,8 @@ class MultimodalPrototypeModel(nn.Module):
         )
         
         # 融合模块
-        if fusion_method == 'clara':
-            self.fusion_module = CLARA(embed_dim=256, use_auditory_type=use_auditory_type)
+        if fusion_method == 'calra':
+            self.fusion_module = CALRA(embed_dim=256, use_auditory_type=use_auditory_type)
         
         # 分类头
         self.classifier = nn.Sequential(
@@ -564,7 +564,7 @@ class MultimodalPrototypeModel(nn.Module):
         pseudo_audio_features = self.audio_proj(pseudo_audio_raw)
         
         # 跨模态融合
-        if self.fusion_method == 'clara':
+        if self.fusion_method == 'calra':
             fused_eeg, aligned_audio = self.fusion_module(eeg_features, pseudo_audio_features)
         
         # 主任务：情绪分类
@@ -608,7 +608,7 @@ class MultimodalPrototypeModel(nn.Module):
             print(f"Successfully loaded {len(pretrained_dict)} layers")
 
 
-def create_model(strategy, eeg_encoder, audio_encoder=None, fusion_method='clara', num_classes=2, use_auditory_type=False):
+def create_model(strategy, eeg_encoder, audio_encoder=None, fusion_method='calra', num_classes=2, use_auditory_type=False):
     """工厂函数：根据策略创建相应的模型"""
     if strategy == 'eeg_only':
         return EEGOnlyModel(eeg_encoder, num_classes)

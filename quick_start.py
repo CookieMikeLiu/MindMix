@@ -7,7 +7,7 @@ This script demonstrates basic usage of MindMix for EEG-audio multimodal learnin
 
 import torch
 import numpy as np
-from universal_models import CLARA, ClipLoss
+from universal_models import CALRA, ClipLoss
 
 
 def create_dummy_data(batch_size=8, eeg_channels=64, eeg_samples=400, audio_dim=768):
@@ -21,14 +21,14 @@ def create_dummy_data(batch_size=8, eeg_channels=64, eeg_samples=400, audio_dim=
     return eeg_data, audio_data
 
 
-def demo_clara_module():
-    """Demonstrate the CLARA fusion module."""
+def demo_calra_module():
+    """Demonstrate the CALRA fusion module."""
     print("=" * 60)
-    print("Demo 1: CLARA (Cross-Attention Low-Rank Alignment) Module")
+    print("Demo 1: CALRA (Cross-Attention Low-Rank Alignment) Module")
     print("=" * 60)
     
-    # Create CLARA module
-    clara = CLARA(
+    # Create CALRA module
+    calra = CALRA(
         embed_dim=256,
         num_heads=4,
         ffn_hidden_factor=2,
@@ -41,14 +41,14 @@ def demo_clara_module():
     eeg_embed = torch.randn(batch_size, 256)
     audio_embed = torch.randn(batch_size, 256)
     
-    # Forward pass through CLARA
-    eeg_out, audio_out = clara(eeg_embed, audio_embed)
+    # Forward pass through CALRA
+    eeg_out, audio_out = calra(eeg_embed, audio_embed)
     
     print(f"Input EEG shape: {eeg_embed.shape}")
     print(f"Input Audio shape: {audio_embed.shape}")
     print(f"Output EEG shape: {eeg_out.shape}")
     print(f"Output Audio shape: {audio_out.shape}")
-    print("[OK] CLARA module successfully fuses EEG and audio representations\n")
+    print("[OK] CALRA module successfully fuses EEG and audio representations\n")
 
 
 def demo_clip_loss():
@@ -127,12 +127,12 @@ def print_model_summary():
     summary = """
 Stage 1: EEG Foundation Pre-training
   - Data: >3,000 hours of EEG recordings
-  - Model: LaBraM (Large Brain Model)
+  - Model: EEG foundation encoder
   - Task: Learn generalized EEG representations
   
 Stage 2: Neural-Acoustic Alignment
   - Data: >100 hours of paired EEG-audio
-  - Module: CLARA (Cross-Attention Low-Rank Alignment)
+  - Module: CALRA (Cross-Attention Low-Rank Alignment)
   - Task: Align EEG and audio embeddings
   
 Downstream Tasks:
@@ -154,7 +154,7 @@ def main():
     np.random.seed(42)
     
     # Run demos
-    demo_clara_module()
+    demo_calra_module()
     demo_clip_loss()
     demo_inference_pipeline()
     print_model_summary()
